@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    tags:
+      - v*.*.**
+    
+jobs:
+  build:
+
+    env:
+      SOLUTION: 'osc-sdk-csharp.sln'
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3.3.0
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.1.1
+
+    - name: Restore dependencies
+      run: nuget restore $SOLUTION
+
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v3.0.3
+      with:
+        dotnet-version: 6.0
+
+    - name: Build
+      run: dotnet build $SOLUTION --configuration Release --no-restore
+      
+    - name: Publish
+      if: startsWith(github.ref, 'refs/heads/release')
+      run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGETSDKTOKEN}}
